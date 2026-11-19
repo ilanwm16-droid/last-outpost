@@ -2,7 +2,7 @@
 // packets travel through a WebRTC data channel. No camera/microphone is used.
 const VERSION=4, MAX_BYTES=128*1024, MAX_GUESTS=3;
 const ROOM_PATTERN=/^outpost-[a-f0-9]{16}$/;
-const PUBLISHED_URL='https://last-outpost-zombies-lz-n13.harmoniousknot1.chatgpt.site/';
+const PUBLISHED_URL='https://ilanwm16-droid.github.io/last-outpost/';
 const cleanName=value=>String(value||'Выживший').replace(/[\x00-\x1f\x7f]/g,'').trim().slice(0,24)||'Выживший';
 const randomId=()=>Array.from(crypto.getRandomValues(new Uint8Array(8)),b=>b.toString(16).padStart(2,'0')).join('');
 
@@ -10,7 +10,12 @@ const randomId=()=>Array.from(crypto.getRandomValues(new Uint8Array(8)),b=>b.toS
 // (mobile data, carrier-grade NAT) need a TURN relay. Configure ONE of:
 // 1) Static credentials (ExpressTURN, Xirsys, own coturn), for example:
 //      {urls:['turn:<host>:3478','turn:<host>:3478?transport=tcp'],username:'<user>',credential:'<password>'}
-const TURN_SERVERS=[];
+// ExpressTURN free tier. These credentials are public by design (they ship to every player).
+const TURN_SERVERS=[{
+  urls:['turn:free.expressturn.com:3478','turn:free.expressturn.com:3478?transport=tcp'],
+  username:'000000002110530359',
+  credential:'fpMS3GJhsD71kXxyB6cuzR7DEIU=',
+}];
 // 2) A credentials endpoint that returns an iceServers array (Metered Open Relay):
 //      https://<app>.metered.live/api/v1/turn/credentials?apiKey=<key>
 const TURN_CREDENTIALS_URL='';
