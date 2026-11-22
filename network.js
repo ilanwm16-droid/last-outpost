@@ -1,6 +1,6 @@
 // Host-authoritative transport. PeerJS Cloud provides signalling only; game
 // packets travel through a WebRTC data channel. No camera/microphone is used.
-const VERSION=4, MAX_BYTES=128*1024, MAX_GUESTS=3;
+const VERSION=5, MAX_BYTES=128*1024, MAX_GUESTS=3;
 const ROOM_PATTERN=/^outpost-[a-f0-9]{16}$/;
 const PUBLISHED_URL='https://ilanwm16-droid.github.io/last-outpost/';
 const cleanName=value=>String(value||'Выживший').replace(/[\x00-\x1f\x7f]/g,'').trim().slice(0,24)||'Выживший';

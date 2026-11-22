@@ -26,3 +26,13 @@
 #waveState { overflow-wrap:normal }
 @media(max-width:700px) {#djAbility {top:157px;right:18px;padding:6px 8px;min-width:94px}.tagline {max-width:460px} }
 @media(max-height:550px) and (pointer:coarse) { #djAbility {top:9px;right:36%;min-width:90px} }
+
+/* Boss health, wave event tag, kill streak */
+#bossBar{position:absolute;top:84px;left:50%;transform:translateX(-50%);width:min(520px,70vw);text-align:center;font:800 13px 'Barlow Condensed',Arial,sans-serif;letter-spacing:.22em;color:#ffb199;text-shadow:0 0 10px #ff3b2466}
+#bossBar div{height:10px;margin-top:5px;background:#2a0f0cd0;border:1px solid #ff6a4a77;box-shadow:0 0 18px #ff3b2433}
+#bossBar i{display:block;height:100%;width:100%;background:linear-gradient(90deg,#ff3b24,#ff9a4a);transition:width .15s}
+#eventTag{position:absolute;top:128px;left:50%;transform:translateX(-50%);padding:5px 12px;border:1px solid #ff6a4a66;background:#2a0f0cb0;font:800 12px 'Barlow Condensed',Arial,sans-serif;letter-spacing:.2em;color:#ffcfb8;animation:eventPulse 1.6s ease-in-out infinite}
+#combo{position:absolute;right:30px;top:42%;font:900 36px 'Barlow Condensed',Arial,sans-serif;letter-spacing:.04em;color:var(--orange);text-shadow:0 0 18px #f4a34088;animation:comboPop .25s ease-out}
+#hitmarker.kill{color:#ff4b3a;font-size:46px}
+@keyframes eventPulse{50%{border-color:#ff6a4acc;box-shadow:0 0 16px #ff3b2455}}
+@keyframes comboPop{from{transform:scale(1.35)}to{transform:scale(1)}}

@@ -203,6 +203,29 @@ export function createWeapon(type = 'ak') {
     box(group, M.glove, -.08, -.065, -.24, .14, .1, .18).rotation.z = -.4;
     box(group, M.cloth, -.13, -.15, -.13, .13, .15, .26).rotation.x = .7;
     group.userData.muzzle = new THREE.Vector3(0, 0, -.96);
+  } else if (type === 'shotgun') {
+    // Pump-action: twin tubes (barrel over magazine), wooden pump and stock.
+    tube(group, M.darkMetal, 0, .045, -.5, .03, .62);
+    tube(group, M.metal, 0, -.02, -.44, .026, .5);
+    tube(group, M.darkMetal, 0, .045, -.82, .036, .04);
+    box(group, M.bolt, 0, .085, -.79, .014, .03, .02);
+    box(group, M.darkMetal, 0, .01, -.08, .11, .15, .34);
+    box(group, M.metal, .057, .03, -.1, .006, .06, .16);
+    box(group, M.bolt, 0, .09, -.02, .02, .018, .1);
+    const pump = new THREE.Group();
+    pump.position.set(0, -.02, -.42);
+    group.add(pump);
+    box(pump, M.woodDark, 0, 0, 0, .085, .075, .22);
+    for (let i = 0; i < 4; i++) box(pump, M.wood, 0, -.04, -.08 + i * .055, .09, .012, .025);
+    box(group, M.wood, 0, -.03, .2, .085, .14, .26).rotation.x = -.08;
+    box(group, M.woodDark, 0, -.05, .34, .1, .19, .04);
+    box(group, M.darkMetal, 0, -.12, .02, .07, .17, .09).rotation.x = -.3;
+    box(group, M.glove, 0, -.115, .04, .115, .135, .14).rotation.x = -.25;
+    box(group, M.cloth, .04, -.205, .15, .14, .19, .22).rotation.x = -.3;
+    box(group, M.glove, -.05, -.07, -.42, .13, .1, .17).rotation.z = -.32;
+    box(group, M.cloth, -.12, -.15, -.27, .135, .15, .3).rotation.x = .65;
+    group.userData.pump = pump;
+    group.userData.muzzle = new THREE.Vector3(0, .045, -.86);
   } else {
     // Wood furniture and the curved segmented magazine establish the AK shape.
     box(group, M.darkMetal, 0, 0, -.1, .12, .13, .43);

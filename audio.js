@@ -122,7 +122,7 @@ export function createAudio() {
     } catch { return false; }
   }
 
-  function play(kind, { distance = 0, pan = 0, volume = 1 } = {}) {
+  function play(kind, { distance = 0, pan = 0, volume = 1, rate = 1 } = {}) {
     if (!ctx || !enabled || ctx.state === 'closed') return;
     const bank = samples.get(kind); if (!bank) return;
     distance = Math.max(0, Number(distance) || 0);
@@ -136,7 +136,7 @@ export function createAudio() {
     const source = ctx.createBufferSource(), gain = ctx.createGain(), filter = ctx.createBiquadFilter();
     const panner = ctx.createStereoPanner?.();
     source.buffer = bank[Math.floor(random() * bank.length)];
-    source.playbackRate.value = kind === 'shot' || kind === 'minigun' ? .97 + random() * .06 : 1;
+    source.playbackRate.value = (kind === 'shot' || kind === 'minigun' ? .97 + random() * .06 : 1) * Math.max(.25, Math.min(4, Number(rate) || 1));
     filter.type = 'lowpass'; filter.frequency.value = Math.max(650, 18000 / (1 + distance * .09));
     const level = kind === 'minigun' ? .58 : kind === 'blast' ? .95 : kind === 'shot' ? .86 : .74;
     gain.gain.value = level * Math.max(0, Math.min(1, Number(volume) || 0)) / (1 + distance * .055);
