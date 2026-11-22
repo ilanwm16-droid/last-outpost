@@ -5,7 +5,7 @@
   <meta name="robots" content="noindex,nofollow">
   <meta name="theme-color" content="#101b20"><meta name="description" content="Выстоять до рассвета. Шутер от первого лица с АК-47, РПГ-7 и бесконечными волнами зомби.">
   <title>Последний рубеж — Выстоять до рассвета</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css"><link rel="stylesheet" href="hud.css">
 </head>
 <body>
   <canvas id="game" aria-label="Трёхмерная игровая арена"></canvas>
@@ -31,12 +31,12 @@
     <div class="grenade-panel" aria-label="Запас ручных гранат"><span>G · ГРАНАТА</span><b id="grenadeCount">3</b></div>
     <button id="djAbility" aria-label="Включить утку-диджея" title="Отвлекает зомби в радиусе 12 метров"><kbd>Q</kbd><span><b>УТКА-ДИДЖЕЙ</b><small id="djStatus">Включить</small></span></button>
     <div id="squadPanel" class="squad-panel" hidden><div class="eyebrow">ОТРЯД <span id="squadCount">1 / 4</span></div><div id="squadList"></div></div>
-<div id="crosshair"><i></i><i></i><i></i><i></i><b></b></div><div id="hitmarker">×</div><div id="bossBar" hidden><span>ТИТАН</span><div><i id="bossFill"></i></div></div><div id="eventTag" hidden></div><div id="combo" hidden></div>
+<div id="crosshair"><i></i><i></i><i></i><i></i><b></b></div><div id="hitmarker">×</div><div id="bossBar" hidden><span>ТИТАН</span><div><i id="bossFill"></i></div></div><div id="eventTag" hidden></div><div id="combo" hidden></div><div id="fxLayer"></div><div id="dirLayer"></div><div id="killFeed"></div><div id="perkModal" hidden><div class="perk-head"><b>ВЫБЕРИ УСИЛЕНИЕ</b><span>КЛАВИШИ 1 · 2 · 3</span></div><div class="perk-cards"></div></div>
     <div id="banner"><span id="bannerLabel"></span><b id="bannerTitle"></b><p id="bannerSub"></p></div>
     <div id="toast" role="status"></div>
-    <div class="health-panel"><div class="health-number"><span>✚</span><b id="health">100</b><small>/ 100</small></div><div class="health-bar"><i id="healthBar"></i></div><div class="stamina-bar"><i id="staminaBar"></i></div><small>ЗДОРОВЬЕ <span>SHIFT · БЕГ</span></small></div>
-    <div class="quickslots"><div id="slotAk" class="active"><span>1</span> АК-47</div><div id="slotShotgun"><span>2</span> ДРОБОВИК</div><div id="slotRpg"><span>3</span> РПГ-7</div><div id="slotMini" hidden><span>4</span> МИНИГАН</div><small>R · ПЕРЕЗАРЯДКА <span>ESC · ПАУЗА</span></small></div>
-    <div class="ammo-panel"><span id="weaponName">АК-47</span><div><b id="ammo">30</b><span>/ <i id="reserve">180</i></span></div><small id="ammoStatus">7.62 × 39 ММ · АВТО</small><div id="reloadBar"><i></i></div></div>
+    <div class="health-panel"><div class="health-number"><span>✚</span><b id="health">100</b><small id="healthMax">/ 100</small></div><div class="health-bar"><i id="healthBar"></i></div><div class="stamina-bar"><i id="staminaBar"></i></div><small>ЗДОРОВЬЕ <span>SHIFT · БЕГ</span></small></div>
+    <div class="quickslots"><div id="slotAk" class="active"><span>1</span> АК-47</div><div id="slotShotgun"><span>2</span> ДРОБОВИК</div><div id="slotRpg"><span>3</span> РПГ-7</div><div id="slotMini" hidden><span>4</span> МИНИГАН</div><small>R · ПЕРЕЗАРЯДКА · L · ФОНАРИК <span>ESC · ПАУЗА</span></small></div>
+    <div class="ammo-panel"><span id="weaponName">АК-47</span><div><b id="ammo">30</b><span>/ <i id="reserve">180</i></span></div><small id="ammoStatus">7.62 × 39 ММ · АВТО</small><div id="ammoPips"></div><div id="reloadBar"><i></i></div></div>
     <div id="lockHint" hidden>Нажми на игру, чтобы управлять мышью</div>
     <div id="touchControls"><div id="joystick"><i></i></div><div class="touch-buttons"><button id="touchReload">R</button><button id="touchSwitch">⇄</button><button id="touchFire">ОГОНЬ</button><button id="touchGrenade" aria-label="Бросить ручную гранату">ГРАНАТА</button></div></div>
   </section>

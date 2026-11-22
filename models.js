@@ -21,10 +21,6 @@ const M = {
   eye: material(0xffb84c, { emissive: 0xff8f21, emissiveIntensity: 2.7 }),
   patch: material(0xb7ab79),
 };
-const zombieSurface = material(0xffffff, { vertexColors: true });
-const zombieEyes = material(0xffffff, { vertexColors: true, emissive: 0xff8f21, emissiveIntensity: 2.7 });
-const zombieTemplates = new Map();
-
 function mesh(geometry, mat, parent, x, y, z, sx, sy, sz) {
   const part = new THREE.Mesh(geometry, mat);
   part.position.set(x, y, z);
@@ -41,33 +37,54 @@ function tube(parent, mat, x, y, z, radius, length) {
   return result;
 }
 
+const zombieSurface = material(0xffffff, { vertexColors: true, roughness: .9 });
+const glowMaterials = new Map();
+function glowMaterial(source) {
+  const key = source.emissive.getHex() + ':' + source.emissiveIntensity;
+  if (!glowMaterials.has(key)) glowMaterials.set(key, material(0xffffff, { vertexColors: true, emissive: source.emissive.getHex(), emissiveIntensity: source.emissiveIntensity }));
+  return glowMaterials.get(key);
+}
+const zombieTemplates = new Map();
+const tones = new Map();
+const tone = hex => { if (!tones.has(hex)) tones.set(hex, material(hex)); return tones.get(hex); };
+// Gore and gear palette. Every color is baked into vertex colors per joint.
+const G = {
+  blood: material(0x5a0b09), bloodBright: material(0x8c1510), bone: material(0xd8d0b4), flesh: material(0x7a2a22),
+  dark: material(0x101010), hair: material(0x211d18), shoe: material(0x1a1a17), vest: material(0x39412f),
+  plate: material(0x2b3127), helmet: material(0x353e2f), rock: material(0x4d4842), rockDark: material(0x2d2a26),
+  spike: material(0xcfc4a4), chain: material(0x55595a),
+  eyeRed: material(0xff4a3a, { emissive: 0xff1c08, emissiveIntensity: 3.2 }),
+  pus: material(0xb6ff5c, { emissive: 0x6dff1a, emissiveIntensity: 1.9 }),
+  core: material(0xffa040, { emissive: 0xff3c08, emissiveIntensity: 3.4 }),
+};
+const SKIN = [0x8fa07f, 0x9ba5a9, 0xaaa274], SKIN_DARK = [0x5d6b53, 0x666f76, 0x76704d];
+const SHIRT = [0x3c5465, 0xb4ae9b, 0x7a2f2a, 0x2b3233], PANTS = [0x2f4157, 0x6a6148, 0x1e2223];
+
 // Bake the rigid details into colored triangles while retaining each animated
-// joint. Eye surfaces stay separate so their light is genuinely emissive.
+// joint. Glowing parts (eyes, pustules, cores) keep a separate emissive mesh.
 function mergeRigid(node) {
   node.updateWorldMatrix(true, true);
   const inverse = node.matrixWorld.clone().invert();
-  const buckets = [[], []];
+  const buckets = new Map();
   node.traverse(part => {
     if (!part.isMesh) return;
     const transformed = part.geometry.index ? part.geometry.toNonIndexed() : part.geometry.clone();
     transformed.applyMatrix4(new THREE.Matrix4().multiplyMatrices(inverse, part.matrixWorld));
-    buckets[part.material === M.eye ? 1 : 0].push({ geometry: transformed, color: part.material.color });
+    const glow = part.material.emissive && part.material.emissive.getHex() !== 0;
+    const target = glow ? glowMaterial(part.material) : zombieSurface;
+    if (!buckets.has(target)) buckets.set(target, []);
+    buckets.get(target).push({ geometry: transformed, color: part.material.color });
   });
   node.clear();
-  buckets.forEach((pieces, bucket) => {
-    if (!pieces.length) return;
+  for (const [mat, pieces] of buckets) {
     const count = pieces.reduce((sum, part) => sum + part.geometry.attributes.position.count, 0);
-    const positions = new Float32Array(count * 3);
-    const normals = new Float32Array(count * 3);
-    const colors = new Float32Array(count * 3);
+    const positions = new Float32Array(count * 3), normals = new Float32Array(count * 3), colors = new Float32Array(count * 3);
     let offset = 0;
     for (const { geometry, color } of pieces) {
       const length = geometry.attributes.position.count * 3;
       positions.set(geometry.attributes.position.array, offset);
       normals.set(geometry.attributes.normal.array, offset);
-      for (let i = offset; i < offset + length; i += 3) {
-        colors[i] = color.r; colors[i + 1] = color.g; colors[i + 2] = color.b;
-      }
+      for (let i = offset; i < offset + length; i += 3) { colors[i] = color.r; colors[i + 1] = color.g; colors[i + 2] = color.b; }
       offset += length;
       geometry.dispose();
     }
@@ -77,109 +94,187 @@ function mergeRigid(node) {
     geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
     geometry.computeBoundingBox();
     geometry.computeBoundingSphere();
-    const merged = new THREE.Mesh(geometry, bucket ? zombieEyes : zombieSurface);
+    const merged = new THREE.Mesh(geometry, mat);
     merged.castShadow = true;
     merged.receiveShadow = true;
     node.add(merged);
-  });
+  }
 }
 
+const HEIGHTS = { walker: 1.95, runner: 1.86, brute: 2.25, exploder: 2.0, boss: 3.45 };
 function cloneZombie(template, type) {
   const group = template.clone(true);
-  group.userData = { type, height: type === 'brute' ? 2.54 : type === 'runner' ? 1.93 : 1.98 };
-  for (const joint of ['leftLeg', 'rightLeg', 'leftArm', 'rightArm', 'head', 'torso']) {
-    group.userData[joint] = group.getObjectByName(joint);
-  }
+  const height = HEIGHTS[type] || 1.95;
+  group.userData = { type, height, headY: type === 'boss' ? 2.75 : height * .79 };
+  for (const joint of ['leftLeg', 'rightLeg', 'leftArm', 'rightArm', 'head', 'torso']) group.userData[joint] = group.getObjectByName(joint);
   return group;
 }
 
-export function createZombie(type = 'walker') {
-  if (zombieTemplates.has(type)) return cloneZombie(zombieTemplates.get(type), type);
-  const group = new THREE.Group();
-  const brute = type === 'brute';
-  const runner = type === 'runner';
-  const skin = brute ? M.skinBrute : runner ? M.skinRunner : M.skin;
-  const shirt = brute ? M.shirtDark : runner ? M.runner : M.shirt;
+function buildZombie(type, v) {
+  const g = new THREE.Group();
+  const runner = type === 'runner', brute = type === 'brute', bloat = type === 'exploder';
+  const skin = tone(SKIN[v]), skinD = tone(SKIN_DARK[v]);
+  const shirt = tone(SHIRT[(v + (runner ? 1 : 0) + (bloat ? 2 : 0)) % 4]), pants = tone(PANTS[v]);
+  const W = brute ? 1.28 : runner ? .86 : bloat ? 1.12 : 1;
 
-  // Legs pivot at the hip; animation can rotate these groups directly.
   function leg(side) {
-    const pivot = new THREE.Group();
-    pivot.position.set(side * .135, .85, 0);
-    group.add(pivot);
-    box(pivot, M.pants, 0, -.18, 0, .205, .36, .23);
-    box(pivot, runner ? skin : M.pantsLight, 0, -.44, .015, .16, .24, .19);
-    box(pivot, M.boots, 0, -.71, .055, .22, .28, .34);
-    box(pivot, M.strap, 0, -.49, .118, .17, .055, .025);
-    return pivot;
+    const p = new THREE.Group(); p.position.set(side * .12 * W, .9, 0); g.add(p);
+    box(p, pants, 0, -.21, 0, .19 * W, .43, .21 * W);
+    const torn = runner || (v === 1 && side < 0);
+    box(p, torn ? skin : pants, 0, -.52, .01, .16 * W, .3, .18 * W);
+    if (torn) { box(p, G.blood, 0, -.43, .1 * W, .12, .07, .02); box(p, pants, 0, -.38, 0, .2 * W, .06, .22 * W); }
+    const bare = v === 2 && side > 0;
+    box(p, bare ? skinD : G.shoe, 0, -.8, .05, .19 * W, .12, .32);
+    if (bare) for (let t = -1; t <= 1; t++) box(p, skinD, t * .05, -.82, .22, .035, .05, .05);
+    return p;
   }
   const leftLeg = leg(-1), rightLeg = leg(1);
-  box(group, M.pants, 0, .85, -.012, .43, .25, .25);
-  box(group, M.strap, 0, .95, .015, .45, .055, .29);
-  box(group, M.bolt, .035, .952, .17, .075, .06, .025);
-  const torso = box(group, shirt, 0, 1.23, -.025, .51, .53, .3);
-  torso.rotation.z = .025;
-  box(group, M.shirtDark, -.13, 1.31, .14, .17, .15, .026);
-  box(group, runner ? skin : M.wound, .16, 1.08, .138, .12, .18, .03).rotation.z = .2;
-  box(group, M.strap, .12, 1.25, .15, .045, .5, .035).rotation.z = -.22;
-  box(group, M.patch, -.13, 1.36, .16, .09, .022, .025);
-  if (brute) {
-    box(group, M.oliveDark, 0, 1.25, .17, .4, .38, .08);
-    for (let i = 0; i < 3; i++) box(group, M.olive, -.12 + i * .12, 1.19, .235, .095, .19, .075);
-    box(group, M.darkMetal, -.29, 1.47, 0, .19, .12, .34);
-    box(group, M.darkMetal, .29, 1.47, 0, .19, .12, .34);
+
+  const torso = new THREE.Group(); torso.position.set(0, .95, 0); torso.rotation.x = runner ? .34 : .2; g.add(torso);
+  box(torso, pants, 0, -.02, 0, .4 * W, .17, .25 * W);
+  box(torso, G.shoe, 0, .07, 0, .42 * W, .05, .27 * W);
+  box(torso, G.chain, .1, .07, .14 * W, .06, .04, .02);
+  if (bloat) {
+    mesh(sphere, skin, torso, 0, .36, .07, .37, .39, .34);
+    mesh(sphere, skinD, torso, 0, .3, .03, .3, .3, .3);
+    for (const [x, y, z, r] of [[.18, .42, .3, .07], [-.15, .27, .33, .06], [.05, .57, .31, .05], [-.24, .5, .19, .06], [.27, .24, .19, .05], [-.05, .15, .33, .045]]) mesh(sphere, G.pus, torso, x, y, z, r, r, r * .85);
+    box(torso, shirt, 0, .66, 0, .5, .16, .3);
+    box(torso, G.blood, .2, .5, .25, .08, .16, .03);
+  } else if (runner) {
+    box(torso, skin, 0, .33, 0, .36, .5, .22);
+    box(torso, G.flesh, .08, .3, .107, .17, .3, .01);
+    for (let i = 0; i < 4; i++) box(torso, G.bone, .08, .19 + i * .075, .113, .15, .022, .02);
+    box(torso, G.blood, -.1, .16, .112, .08, .16, .01);
+    box(torso, skinD, 0, .55, -.11, .3, .06, .02);
+  } else {
+    box(torso, shirt, 0, .34, 0, .48 * W, .52, .27 * W);
+    box(torso, G.flesh, .12 * W, .28, .137 * W, .14, .2, .012);
+    for (let i = 0; i < 3; i++) box(torso, G.bone, .12 * W, .21 + i * .07, .142 * W, .13, .02, .012);
+    const flapA = box(torso, shirt, -.15 * W, .03, .11 * W, .12, .17, .02); flapA.rotation.z = .16;
+    box(torso, shirt, .1 * W, .01, .12 * W, .1, .12, .02);
+    box(torso, G.blood, -.08, .46, .139 * W, .12, .11, .01);
+    box(torso, G.bloodBright, .05, .12, .138 * W, .2, .05, .01);
+    box(torso, G.blood, -.12, .3, -.137 * W, .14, .2, .01);
+    if (brute) {
+      box(torso, G.vest, 0, .35, 0, .56, .47, .35);
+      box(torso, G.plate, 0, .39, .178, .4, .3, .03);
+      for (let i = 0; i < 3; i++) box(torso, G.vest, -.15 + i * .15, .17, .19, .11, .12, .06);
+      box(torso, G.plate, -.33, .56, 0, .2, .1, .37);
+      box(torso, G.plate, .33, .56, 0, .2, .1, .37);
+      box(torso, G.bloodBright, .14, .45, .195, .1, .14, .01);
+    }
   }
-  box(group, skin, 0, 1.53, .025, .17, .18, .17);
 
   const head = new THREE.Group();
-  head.position.set(0, 1.71, .055);
-  head.rotation.z = runner ? -.14 : .065;
-  group.add(head);
-  mesh(sphere, skin, head, 0, .035, 0, .195, .22, .18);
-  box(head, skin, 0, -.085, .035, .29, .19, .25);
-  box(head, M.skinDark, 0, .19, -.025, .3, .06, .26);
-  box(head, M.skinDark, -.088, .04, .148, .105, .075, .055);
-  box(head, M.skinDark, .088, .04, .148, .105, .075, .055);
-  box(head, M.eye, -.087, .038, .182, .065, .027, .02);
-  box(head, M.eye, .087, .038, .182, .065, .027, .02);
-  box(head, skin, 0, -.018, .18, .057, .08, .064);
-  box(head, M.mouth, 0, -.11, .166, .135, .06, .025);
-  box(head, M.teeth, -.016, -.09, .183, .09, .014, .016);
-  box(head, M.wound, .138, -.07, .138, .04, .1, .025).rotation.z = -.2;
+  head.position.set(0, (bloat ? 1.74 : 1.62) + (brute ? .08 : 0), runner ? .22 : .13);
+  head.rotation.z = (v - 1) * .13; head.rotation.x = runner ? .18 : .05; g.add(head);
+  box(head, skin, 0, -.1, -.02, .12, .1, .12);
+  mesh(sphere, skin, head, 0, .06, 0, .15, .17, .155);
+  box(head, skin, 0, -.04, .03, .2, .12, .2);
+  box(head, skinD, 0, .11, .07, .24, .045, .14);
+  box(head, G.dark, -.06, .045, .128, .075, .055, .02);
+  box(head, G.dark, .06, .045, .128, .075, .055, .02);
+  box(head, M.eye, -.06, .045, .14, .045, .022, .02);
+  if (v !== 1) box(head, M.eye, .06, .045, .14, .045, .022, .02);
+  box(head, skinD, 0, -.005, .15, .045, .06, .05);
+  const jaw = box(head, skinD, 0, -.15, .06, .15, .05, .15); jaw.rotation.x = .38;
+  box(head, G.flesh, 0, -.1, .125, .12, .055, .02);
+  box(head, M.teeth, 0, -.075, .134, .1, .016, .016);
+  box(head, M.teeth, 0, -.135, .145, .09, .016, .016);
+  box(head, G.bloodBright, .02, -.18, .13, .05, .09, .02);
+  if (v === 2) { box(head, G.flesh, .07, .17, .04, .09, .04, .1); box(head, G.bone, .07, .195, .04, .065, .02, .075); }
+  else for (let i = 0; i < 5; i++) box(head, G.hair, -.1 + i * .05, .19 + (i % 2) * .015, -.02 + (i % 3) * .02, .055, .05, .18);
+  box(head, skin, -.16, .03, 0, .03, .07, .05);
+  box(head, skin, .16, .03, 0, .03, .06, .05);
+  if (brute) { mesh(sphere, G.helmet, head, 0, .13, -.01, .19, .12, .19); box(head, G.helmet, 0, .08, .15, .3, .03, .06); box(head, G.chain, .17, .02, .02, .02, .1, .02); }
 
   function arm(side) {
-    const pivot = new THREE.Group();
-    pivot.position.set(side * .31, 1.43, 0);
-    pivot.rotation.x = -.8;
-    pivot.rotation.z = side * -.14;
-    group.add(pivot);
-    box(pivot, shirt, 0, -.13, 0, .195, .31, .22);
-    box(pivot, skin, 0, -.36, .025, .14, .27, .15);
-    const forearm = new THREE.Group();
-    forearm.position.set(0, -.44, .025);
-    forearm.rotation.x = -.38;
-    pivot.add(forearm);
-    box(forearm, skin, 0, -.11, 0, .125, .24, .14);
-    box(forearm, M.skinDark, 0, -.275, .02, .15, .13, .12);
-    box(forearm, skin, -.04, -.35, .045, .045, .095, .06);
-    box(forearm, skin, .035, -.355, .045, .065, .105, .06);
-    return pivot;
+    const p = new THREE.Group(); p.position.set(side * .29 * W, 1.43 + (brute ? .06 : 0), .06); p.rotation.x = -1.1; p.rotation.z = side * -.12; g.add(p);
+    const sleeve = !runner && !(v === 2 && side > 0);
+    box(p, sleeve ? shirt : skin, 0, -.15, 0, .15 * W, .3, .16 * W);
+    if (!sleeve) box(p, G.blood, 0, -.08, .085 * W, .1, .1, .01);
+    const fore = new THREE.Group(); fore.position.set(0, -.3, 0); fore.rotation.x = -.25; p.add(fore);
+    box(fore, skin, 0, -.15, 0, .11 * W, .3, .12 * W);
+    if (v === 1 && side < 0) { box(fore, G.flesh, 0, -.29, 0, .1, .05, .1); box(fore, G.bone, 0, -.36, 0, .04, .12, .04); }
+    else {
+      box(fore, skinD, 0, -.33, .01, .13 * W, .08, .12 * W);
+      for (let f = -1; f <= 1; f++) box(fore, skinD, f * .035 * W, -.41, .03, .022, .1, .025).rotation.x = .35;
+    }
+    return p;
   }
   const leftArm = arm(-1), rightArm = arm(1);
-  if (brute) group.scale.set(1.34, 1.28, 1.3);
-  if (runner) group.scale.set(.88, .97, .93);
-  const torsoRig = new THREE.Group();
-  torsoRig.position.copy(torso.position);
-  torsoRig.rotation.copy(torso.rotation);
-  group.add(torsoRig);
-  const bodyParts = group.children.filter(part => part.isMesh);
-  for (const part of bodyParts) torsoRig.attach(part);
-  for (const [name, joint] of Object.entries({ leftLeg, rightLeg, leftArm, rightArm, head, torso: torsoRig })) {
-    joint.name = name;
-    mergeRigid(joint);
+  g.scale.setScalar(brute ? 1.1 : runner ? .95 : 1);
+  for (const [name, joint] of Object.entries({ leftLeg, rightLeg, leftArm, rightArm, head, torso })) { joint.name = name; mergeRigid(joint); }
+  return g;
+}
+
+function buildBoss() {
+  const g = new THREE.Group();
+  const SK = tone(0x77604f), SKD = tone(0x4a3a30), R = G.rock, RD = G.rockDark;
+  function leg(side) {
+    const p = new THREE.Group(); p.position.set(side * .42, 1.32, 0); g.add(p);
+    box(p, SK, 0, -.32, 0, .44, .7, .48);
+    box(p, R, side * .05, -.28, .25, .38, .42, .08);
+    box(p, SKD, 0, -.85, .02, .38, .5, .42);
+    box(p, R, 0, -.82, .22, .3, .3, .06);
+    box(p, RD, 0, -1.22, .1, .5, .2, .72);
+    for (let t = -1; t <= 1; t++) mesh(cone, G.spike, p, t * .14, -1.24, .5, .045, .14, .045).rotation.x = Math.PI / 2;
+    return p;
   }
-  // Cache only an unanimated rig; instances share the compact immutable assets.
-  zombieTemplates.set(type, group);
-  return cloneZombie(group, type);
+  const leftLeg = leg(-1), rightLeg = leg(1);
+  const torso = new THREE.Group(); torso.position.set(0, 1.32, 0); torso.rotation.x = .38; g.add(torso);
+  box(torso, SKD, 0, .05, 0, .92, .32, .62);
+  box(torso, G.chain, 0, .18, .32, .8, .05, .03);
+  box(torso, SK, 0, .52, .02, 1.05, .74, .76);
+  box(torso, SK, 0, 1.07, -.02, 1.38, .72, .88);
+  box(torso, R, 0, 1.12, .44, 1.02, .46, .1);
+  box(torso, RD, -.3, .62, .4, .3, .3, .06);
+  box(torso, RD, .32, .5, .39, .26, .26, .06);
+  box(torso, G.dark, 0, .82, .44, .42, .42, .04);
+  mesh(sphere, G.core, torso, 0, .82, .48, .17, .17, .1);
+  for (let i = 0; i < 4; i++) box(torso, G.bone, 0, .66 + i * .1, .455, .5, .03, .03);
+  box(torso, R, -.8, 1.36, 0, .56, .42, .74);
+  box(torso, R, .8, 1.36, 0, .56, .42, .74);
+  for (let i = 0; i < 5; i++) {
+    const s = mesh(cone, G.spike, torso, (i - 2) * .22, 1.25 + Math.abs(i - 2) * -.08, -.5, .09, .48 - Math.abs(i - 2) * .08, .09);
+    s.rotation.x = -.95;
+  }
+  for (const x of [-.85, .85]) for (let i = 0; i < 2; i++) mesh(cone, G.spike, torso, x + (i - .5) * .2, 1.62, -.05 + i * .15, .07, .3, .07);
+  box(torso, G.bloodBright, .4, .9, .45, .14, .3, .02);
+  box(torso, G.blood, -.45, .35, .39, .2, .16, .02);
+
+  const head = new THREE.Group(); head.position.set(0, 2.82, .62); g.add(head);
+  mesh(sphere, SK, head, 0, .04, 0, .33, .3, .33);
+  box(head, R, 0, .2, .12, .64, .13, .42);
+  box(head, G.dark, -.13, .07, .29, .14, .08, .04);
+  box(head, G.dark, .13, .07, .29, .14, .08, .04);
+  box(head, G.eyeRed, -.13, .07, .31, .1, .045, .03);
+  box(head, G.eyeRed, .13, .07, .31, .1, .045, .03);
+  const jaw = box(head, SKD, 0, -.22, .14, .46, .14, .38); jaw.rotation.x = .32;
+  box(head, G.flesh, 0, -.13, .27, .36, .1, .04);
+  for (let i = 0; i < 5; i++) mesh(cone, G.spike, head, -.16 + i * .08, -.08, .3, .025, .09, .025).rotation.x = Math.PI;
+  for (const side of [-1, 1]) { const horn = mesh(cone, G.spike, head, side * .27, .33, -.02, .08, .42, .08); horn.rotation.z = -side * .55; horn.rotation.x = -.35; }
+
+  function arm(side) {
+    const p = new THREE.Group(); p.position.set(side * .92, 2.4, .2); p.rotation.x = -.55; p.rotation.z = side * -.18; g.add(p);
+    box(p, SK, 0, -.38, 0, .44, .84, .48);
+    box(p, R, side * .2, -.28, 0, .12, .62, .5);
+    const fore = new THREE.Group(); fore.position.set(0, -.8, 0); fore.rotation.x = -.3; p.add(fore);
+    box(fore, SKD, 0, -.38, 0, .5, .8, .52);
+    box(fore, G.chain, 0, -.15, 0, .54, .06, .56);
+    box(fore, RD, 0, -.95, .02, .66, .56, .66);
+    for (let k = -1; k <= 1; k++) mesh(cone, G.spike, fore, k * .18, -1.0, .36, .055, .2, .055).rotation.x = Math.PI / 2;
+    return p;
+  }
+  const leftArm = arm(-1), rightArm = arm(1);
+  for (const [name, joint] of Object.entries({ leftLeg, rightLeg, leftArm, rightArm, head, torso })) { joint.name = name; mergeRigid(joint); }
+  return g;
+}
+
+export function createZombie(type = 'walker', variant = 0) {
+  const v = Math.abs(Math.floor(variant)) % 3, key = type + ':' + (type === 'boss' ? 0 : v);
+  if (!zombieTemplates.has(key)) zombieTemplates.set(key, type === 'boss' ? buildBoss() : buildZombie(type, v));
+  return cloneZombie(zombieTemplates.get(key), type);
 }
 
 export function createWeapon(type = 'ak') {
@@ -258,6 +353,7 @@ export function createWeapon(type = 'ak') {
     box(group, M.cloth, .04, -.205, .15, .14, .19, .22).rotation.x = -.3;
     box(group, M.glove, -.06, -.055, -.4, .13, .105, .18).rotation.z = -.32;
     box(group, M.cloth, -.12, -.14, -.25, .135, .15, .3).rotation.x = .65;
+    group.userData.mag = mag;
     group.userData.muzzle = new THREE.Vector3(0, .025, -.85);
   }
   group.userData.type = type;

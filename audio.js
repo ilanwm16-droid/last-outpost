@@ -9,7 +9,7 @@ export function createAudio() {
   const decay = (t, start, duration) => t < start ? 0 : Math.exp(-(t - start) / duration);
 
   function bake(kind, variant = 0) {
-    const lengths = { shot: .54, minigun: .27, rocket: .95, blast: 2.25, hurt: .24, wave: .82, pickup: .36, reload: .53, switch: .17, hit: .08, airdrop: 3.3, quack:.42, pop:.23, downbeat:.30, offbeat:.23 };
+    const lengths = { shot: .54, minigun: .27, rocket: .95, blast: 2.25, hurt: .24, wave: .82, pickup: .36, reload: .53, switch: .17, hit: .08, airdrop: 3.3, quack:.42, pop:.23, downbeat:.30, offbeat:.23, groan:1.1, casing:.16, roar:1.6 };
     const duration = lengths[kind], rate = ctx.sampleRate;
     const buffer = ctx.createBuffer(1, Math.ceil(duration * rate), rate), data = buffer.getChannelData(0);
     let low = 0, mid = 0, rumble = 0, rotor = 0;
@@ -30,6 +30,14 @@ export function createAudio() {
         const bolt = (n - low) * (decay(t, .033, .005) + decay(t, .071, .009)) * .24;
         const tail = mid * decay(t, .038, rapid ? .026 : .105) * .35;
         value = crack + report + pressure + thump + bolt + tail;
+      } else if(kind==='groan'||kind==='roar'){
+        // Pitched, throaty noise through a wobbling formant: a hungry undead moan.
+        const big=kind==='roar', len=big?1.5:1, env=Math.sin(Math.PI*Math.min(1,t/len))**(big?.6:1.2);
+        const f0=(big?52:88+variant*9)*(1+.18*Math.sin(2*Math.PI*(big?3.5:2.2)*t)+(big?0:-.25*t));
+        const phase=2*Math.PI*f0*t, buzz=Math.sign(Math.sin(phase))*.35+Math.sin(phase*2)*.25+Math.sin(phase*3)*.15;
+        value=env*(buzz*(.55+.45*Math.sin(2*Math.PI*(big?5:7)*t))*(.7+.3*low*4)+mid*.25)*(big?.75:.42);
+      } else if(kind==='casing'){
+        value=Math.sin(2*Math.PI*(4200+variant*300)*t)*decay(t,0,.03)*.12+Math.sin(2*Math.PI*6100*t)*decay(t,.06,.02)*.06;
       } else if(kind==='quack'){
         const a=t<.19?t:t-.21, envelope=a<0?0:Math.sin(Math.PI*Math.min(1,a/.155))**1.3;
         const f=2*Math.PI*(520*a-600*a*a);value=envelope*(Math.sin(f)+.68*Math.sin(3*f)+.22*Math.sin(5*f))*.32;
@@ -113,8 +121,8 @@ export function createAudio() {
         reverb = ctx.createConvolver(); reverb.buffer = makeImpulse();
         reverbGain = ctx.createGain(); reverbGain.gain.value = .17;
         reverb.connect(reverbGain); reverbGain.connect(limiter);
-        for (const kind of ['shot','minigun','rocket','blast','hurt','wave','pickup','reload','switch','hit','airdrop','quack','pop','downbeat','offbeat']) {
-          samples.set(kind, Array.from({ length: kind === 'shot' || kind === 'minigun' ? 4 : 1 }, (_, i) => bake(kind, i)));
+        for (const kind of ['shot','minigun','rocket','blast','hurt','wave','pickup','reload','switch','hit','airdrop','quack','pop','downbeat','offbeat','groan','casing','roar']) {
+          samples.set(kind, Array.from({ length: kind === 'shot' || kind === 'minigun' || kind === 'groan' ? 4 : kind === 'casing' ? 3 : 1 }, (_, i) => bake(kind, i)));
         }
       }
       const pending = ctx.resume(); pending?.catch?.(() => {});
@@ -138,7 +146,7 @@ export function createAudio() {
     source.buffer = bank[Math.floor(random() * bank.length)];
     source.playbackRate.value = (kind === 'shot' || kind === 'minigun' ? .97 + random() * .06 : 1) * Math.max(.25, Math.min(4, Number(rate) || 1));
     filter.type = 'lowpass'; filter.frequency.value = Math.max(650, 18000 / (1 + distance * .09));
-    const level = kind === 'minigun' ? .58 : kind === 'blast' ? .95 : kind === 'shot' ? .86 : .74;
+    const level = kind === 'minigun' ? .58 : kind === 'blast' || kind === 'roar' ? .95 : kind === 'shot' ? .86 : kind === 'groan' ? .5 : .74;
     gain.gain.value = level * Math.max(0, Math.min(1, Number(volume) || 0)) / (1 + distance * .055);
     source.connect(filter);
     if (panner) { panner.pan.value = Math.max(-1, Math.min(1, Number(pan) || 0)); filter.connect(panner); panner.connect(gain); }

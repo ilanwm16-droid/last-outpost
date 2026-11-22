@@ -24,7 +24,7 @@ export function enemyStats(config,type) {
     runner:{health:.7,speed:1.6,damage:.9},
     brute:{health:2.6,speed:.75,damage:1.7},
     exploder:{health:.55,speed:1.35,damage:0},
-    boss:{health:24,speed:.82,damage:2.4},
+    boss:{health:42,speed:.85,damage:2.6},
   }[type]||{health:1,speed:1,damage:1};
   return {health:config.health*k.health,speed:Math.min(type==='runner'?6.2:5,config.speed*k.speed),damage:config.damage*k.damage};
 }
