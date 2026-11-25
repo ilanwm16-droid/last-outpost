@@ -67,17 +67,17 @@ export function createGrenades(scene,colliders,onDetonate=()=>{}){
     while(remaining>1e-8){const h=Math.min(1/120,remaining);step(item,h);remaining-=h;}
     item.life=Math.max(0,item.life-dt);
   }
-  function spawn({id,origin,direction,age=0}){
+  function spawn({id,origin,direction,age=0,owner=null}){
     if(id===undefined||!validVector(origin)||!validVector(direction)||items.some(g=>g.id===id))return null;
     const mesh=grenadeMesh();mesh.position.copy(origin);
     const velocity=direction.clone();if(velocity.lengthSq()<.001)velocity.set(0,0,-1);velocity.normalize().multiplyScalar(14);velocity.y+=4;
-    const item={id,mesh,velocity,life:FUSE};items.push(item);scene.add(mesh);correctOverlap(item);
+    const item={id,mesh,velocity,life:FUSE,owner};items.push(item);scene.add(mesh);correctOverlap(item);
     if(Number.isFinite(age)&&age>0)simulate(item,Math.min(FUSE,age));
     return item;
   }
   function update(dt,authoritative=true){
     if(!Number.isFinite(dt)||dt<=0)return;
-    for(const item of [...items]){simulate(item,Math.min(dt,FUSE));if(item.life<=1e-8){const p=item.mesh.position.clone();remove(item);if(authoritative)onDetonate(p);}}
+    for(const item of [...items]){simulate(item,Math.min(dt,FUSE));if(item.life<=1e-8){const p=item.mesh.position.clone();remove(item);if(authoritative)onDetonate(p,item.owner||null);}}
   }
   function sync(records){
     if(!Array.isArray(records))return;

@@ -13,6 +13,8 @@ export const PERKS = {
   regen: { icon: '✚', title: 'Второе дыхание', desc: 'Регенерация 2 HP/с после 4 с без урона', max: 2 },
   legs: { icon: '»', title: 'Адреналин', desc: 'Скорость бега +12%', max: 2 },
   pack: { icon: '◎', title: 'Подрывник', desc: '+2 гранаты сейчас и +1 к запасу', max: 2 },
+  second: { icon: '↺', title: 'Второй шанс', desc: 'Раз за волну сам встаёшь через 5 с после падения', max: 1 },
+  medic: { icon: '⊕', title: 'Санитар', desc: 'Поднимаешь напарников на 40% быстрее, им +25 здоровья', max: 2 },
 };
 
 const level = (p, id) => Math.max(0, Math.min(PERKS[id].max, Math.floor(Number(p?.[id]) || 0)));
@@ -32,6 +34,14 @@ export function perkMods(p = {}) {
     regen: 2 * level(p, 'regen'),
     speed: 1 + .12 * level(p, 'legs'),
     grenades: level(p, 'pack'),
+    // Downed state: self-revive once per wave, selfReviveDelay s after going down.
+    selfRevive: level(p, 'second') > 0,
+    selfReviveDelay: 5,
+    // Revive progress speed multiplier when THIS player revives a teammate
+    // (base 3 s hold -> 2.14 s at level 1, 1.67 s at level 2).
+    reviveSpeed: 1 + .4 * level(p, 'medic'),
+    // Extra HP the revived teammate gets on top of the base 50.
+    reviveBonus: 25 * level(p, 'medic'),
   };
 }
 

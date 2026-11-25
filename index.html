@@ -3,71 +3,370 @@
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="robots" content="noindex,nofollow">
-  <meta name="theme-color" content="#101b20"><meta name="description" content="Выстоять до рассвета. Шутер от первого лица с АК-47, РПГ-7 и бесконечными волнами зомби.">
-  <title>Последний рубеж — Выстоять до рассвета</title>
+  <meta name="theme-color" content="#06090b"><meta name="description" content="Последний рубеж: 30 ночей до рассвета. Кооперативный шутер от первого лица — держите блокпост вместе с другом, пока не прилетит вертолёт эвакуации.">
+  <title>Последний рубеж — 30 ночей до рассвета</title>
   <link rel="stylesheet" href="style.css"><link rel="stylesheet" href="hud.css">
+  <script type="importmap">{"imports":{"three":"./vendor/three.module.js"}}</script>
 </head>
 <body>
   <canvas id="game" aria-label="Трёхмерная игровая арена"></canvas>
-  <div class="vignette"></div><div class="grain"></div><div id="damage"></div>
-  <section id="menu" class="screen menu">
-    <header class="brand"><span class="brandmark">Ⅲ</span><span>РУБЕЖ<span class="brand-sub">SURVIVAL PROTOCOL</span></span><span class="build">01 / ЗОНА ОТЧУЖДЕНИЯ</span></header>
-    <main class="intro">
-      <div class="eyebrow"><span class="status-light"></span> ПИРАТСКИЙ ЭФИР · КРЯК FM</div>
-      <h1>ПОСЛЕДНИЙ<br><span>РУБЕЖ</span><span class="title-period">.</span></h1>
-      <p class="tagline">В эфире зомби просят поставить их любимую песню.<br><kbd>Q</kbd> — выпустить утку-диджея и заставить орду танцевать.</p>
-      <div class="menu-actions"><button id="start" class="primary">НАЧАТЬ ВЫЖИВАНИЕ <span>↗</span></button><button id="settings" class="icon-button" aria-label="Настройки звука и мыши">⚙</button></div>
-      <button id="coopOpen" class="secondary coop-menu-button">ИГРАТЬ С ДРУЗЬЯМИ <span>2–4 ИГРОКА</span></button><div class="start-hint"><span class="keycap">W A S D</span> движение <span class="hint-dot">·</span> мышь — прицел и огонь</div>
-      <div class="record"><span>ЛИЧНЫЙ РЕКОРД</span><b id="record">ВОЛНА 00</b><span class="record-line"></span><small>АИРДРОП НА ВОЛНАХ 5 · 10 · 15…</small></div>
-    </main>
-    <aside class="mission fm-poster" aria-label="Памятка отряда"><div class="fm-station"><i></i> КРЯК FM <b>107.3</b></div><div class="fm-sleeve"><strong>УТКА<br>В ЭФИРЕ</strong><div class="vinyl" aria-hidden="true"><i></i></div></div><div class="fm-instruction"><kbd>Q</kbd><span>6 секунд танцев<br><small>Одна утка на весь отряд</small></span></div></aside>
-    <footer class="loadout"><div class="loadout-label">ТВОЙ АРСЕНАЛ <span>ДЕРЖИ ОРУЖИЕ. ДЕРЖИ РУБЕЖ.</span></div><div class="weapon-card"><span class="slot">01</span><svg viewBox="0 0 200 65" aria-hidden="true"><path d="M9 26 42 21 48 27 109 27 109 22 137 22 141 27 182 27 182 22 187 22 187 30 139 32 114 34 103 39 96 60 81 57 89 39 76 37 69 51 61 49 65 35 44 33 12 43Z" fill="currentColor"/><path d="m47 27 31 1-3 9-29-5M106 24h31v9h-31" stroke="#ba7c48" stroke-width="4"/></svg><div><b>АК-47</b><small>ШТУРМОВАЯ ВИНТОВКА</small></div><span class="weapon-key">1</span></div><div class="weapon-card"><span class="slot">02</span><svg viewBox="0 0 200 65" aria-hidden="true"><path d="m10 25 20-3 100 2 23-10 30 13 12 5-13 6-30 10-23-11-98 1-21-4z" fill="currentColor"/><path d="m76 35-4 22h10l7-22m32 0-3 15h9l6-15" fill="currentColor"/><path d="m40 24 44 0v12H40" fill="#7c8a63"/></svg><div><b>РПГ-7</b><small>ВЗРЫВНОЙ УРОН ПО ПЛОЩАДИ</small></div><span class="weapon-key">2</span></div><div class="mode-note"><span class="cross-icon">✛</span><div>БЕСКОНЕЧНЫЕ ВОЛНЫ<small>Больше врагов. Меньше шансов.</small></div></div></footer>
-    <div class="menu-bottom"><span>V2.2 / КРЯК FM</span><span>НАУШНИКИ РЕКОМЕНДУЮТСЯ <span class="tiny-dot">●</span></span></div>
+  <div class="vignette" aria-hidden="true"></div><div class="grain" aria-hidden="true"></div><div id="damage" aria-hidden="true"></div>
+
+  <!-- ===================== MAIN MENU ===================== -->
+  <section id="menu" class="screen menu" aria-label="Главное меню">
+    <header class="menu-top">
+      <div class="brand">
+        <svg class="emblem" viewBox="0 0 40 44" aria-hidden="true"><path d="M20 2 38 9v14c0 10-8 17-18 19C10 40 2 33 2 23V9z" fill="none" stroke="currentColor" stroke-width="2"/><path d="m11 16 9 6 9-6M11 24l9 6 9-6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="bevel"/></svg>
+        <span class="brand-text"><b>СЕКТОР 07</b><small>ПРОТОКОЛ «РАССВЕТ»</small></span>
+      </div>
+      <div class="on-air" aria-hidden="true">
+        <span class="eq"><i></i><i></i><i></i><i></i><i></i></span>
+        <span><b>КРЯК FM 107.3</b> · В ЭФИРЕ</span>
+        <span class="on-air-sep"></span>
+        <span class="beacon"><i></i>МАЯК · НА СВЯЗИ</span>
+      </div>
+    </header>
+
+    <div class="menu-main">
+      <div class="menu-left">
+        <div class="eyebrow menu-eyebrow"><span class="status-light"></span>БЛОКПОСТ НА ТРАССЕ · ЭВАКУАЦИЯ НА РАССВЕТЕ</div>
+        <h1 class="title"><span class="title-line">ПОСЛЕДНИЙ</span><span class="title-line title-accent">РУБЕЖ</span></h1>
+        <p class="subtitle"><span class="subtitle-rule"></span>30 ночей до рассвета</p>
+        <nav class="menu-nav" aria-label="Режимы">
+          <button id="start" type="button" class="menu-btn is-primary"><span class="idx">01</span><span class="lbl"><b>ОДИНОЧНАЯ ИГРА</b><small>Кампания · шесть актов · тридцать ночей</small></span><span class="arrow" aria-hidden="true">→</span></button>
+          <button id="coopOpen" type="button" class="menu-btn"><span class="idx">02</span><span class="lbl"><b>ИГРАТЬ С ДРУГОМ</b><small>2–4 игрока · приглашение по ссылке</small></span><span class="arrow" aria-hidden="true">→</span></button>
+          <button id="settings" type="button" class="menu-btn"><span class="idx">03</span><span class="lbl"><b>НАСТРОЙКИ</b><small>Звук · мышь · графика</small></span><span class="arrow" aria-hidden="true">→</span></button>
+          <button id="howto" type="button" class="menu-btn"><span class="idx">04</span><span class="lbl"><b>КАК ИГРАТЬ</b><small>Управление · бестиарий · арсенал</small></span><span class="arrow" aria-hidden="true">→</span></button>
+        </nav>
+      </div>
+
+      <aside class="menu-right" aria-label="Операция">
+        <div class="campaign" style="--best:0">
+          <div class="panel-head"><span>ДОРОГА К РАССВЕТУ</span><span class="campaign-count"><b id="campaignBest">00</b> / 30 НОЧЕЙ</span></div>
+          <div class="dawn-track" aria-hidden="true"><i class="dawn-mask"></i><i class="dawn-sun"></i></div>
+          <ol class="acts" aria-label="Акты кампании"><li title="Первая ночь">I</li><li title="Голос в эфире">II</li><li title="Туман">III</li><li title="Кровавая луна">IV</li><li title="Последний патрон">V</li><li title="Рассвет">VI</li></ol>
+          <div class="campaign-meta"><span>ЭВАКУАЦИЙ <b id="campaignWins">0</b></span><span>РЕКОРД <b id="record">ВОЛНА 00</b></span></div>
+        </div>
+        <div class="difficulty-block">
+          <div class="panel-head"><span>СЛОЖНОСТЬ</span><span>ВЫБИРАЕТ ВЕДУЩИЙ</span></div>
+          <div id="difficulty" class="difficulty" role="radiogroup" aria-label="Сложность">
+            <button type="button" data-difficulty="recruit" role="radio" aria-checked="false"><span class="pips" data-n="1" aria-hidden="true"><i></i><i></i><i></i></span><b>НОВОБРАНЕЦ</b><small>Зомби слабее и бьют мягче. Для первого знакомства.</small></button>
+            <button type="button" data-difficulty="veteran" role="radio" aria-checked="true" class="active"><span class="pips" data-n="2" aria-hidden="true"><i></i><i></i><i></i></span><b>ВЕТЕРАН</b><small>Задуманный баланс. Лучший выбор для двоих.</small></button>
+            <button type="button" data-difficulty="nightmare" role="radio" aria-checked="false"><span class="pips" data-n="3" aria-hidden="true"><i></i><i></i><i></i></span><b>КОШМАР</b><small>Орда крепче, больнее и многочисленнее.</small></button>
+          </div>
+        </div>
+        <div class="startwave-block">
+          <div class="panel-head"><span>ОТКУДА НАЧАТЬ</span><span>ПРОГРЕСС СОХРАНЯЕТСЯ</span></div>
+          <select id="startWave" class="startwave-select" aria-label="Стартовая ночь"></select>
+          <p id="startWaveInfo" class="startwave-info"></p>
+        </div>
+      </aside>
+    </div>
+
+    <footer class="menu-bottom">
+      <div class="key-strip"><span><kbd>WASD</kbd> движение</span><span><kbd>ЛКМ</kbd> огонь</span><span><kbd>ПКМ</kbd> прицел</span><span><kbd>Q</kbd> утка-диджей</span><span><kbd>Z</kbd> метка</span><span><kbd>F</kbd> поднять друга</span></div>
+      <div class="build"><span>V4.0</span><span class="tiny-dot">●</span><span>НАУШНИКИ РЕКОМЕНДУЮТСЯ</span></div>
+    </footer>
   </section>
+
+  <!-- ===================== HUD ===================== -->
   <section id="hud" hidden>
-    <div class="wave-panel"><span class="eyebrow">ТЕКУЩАЯ ВОЛНА</span><div><b id="wave">01</b><span id="waveState">УДЕРЖИВАЙ ПОЗИЦИЮ</span></div><div class="wave-progress"><i id="waveProgress"></i></div><span class="enemies-label">ПРОТИВНИКОВ <b id="enemies">0</b></span></div>
-    <div class="compass"><span>СЗ</span><i></i><span id="heading">000</span><i></i><span>СВ</span><b>▼</b></div>
-    <div class="score-panel"><span>УСТРАНЕНО</span><b id="kills">0</b><small id="score">000000 ОЧКОВ</small></div>
-    <div class="grenade-panel" aria-label="Запас ручных гранат"><span>G · ГРАНАТА</span><b id="grenadeCount">3</b></div>
-    <button id="djAbility" aria-label="Включить утку-диджея" title="Отвлекает зомби в радиусе 12 метров"><kbd>Q</kbd><span><b>УТКА-ДИДЖЕЙ</b><small id="djStatus">Включить</small></span></button>
-    <div id="squadPanel" class="squad-panel" hidden><div class="eyebrow">ОТРЯД <span id="squadCount">1 / 4</span></div><div id="squadList"></div></div>
-<div id="crosshair"><i></i><i></i><i></i><i></i><b></b></div><div id="hitmarker">×</div><div id="bossBar" hidden><span>ТИТАН</span><div><i id="bossFill"></i></div></div><div id="eventTag" hidden></div><div id="combo" hidden></div><div id="fxLayer"></div><div id="dirLayer"></div><div id="killFeed"></div><div id="perkModal" hidden><div class="perk-head"><b>ВЫБЕРИ УСИЛЕНИЕ</b><span>КЛАВИШИ 1 · 2 · 3</span></div><div class="perk-cards"></div></div>
+    <div id="scope" hidden aria-hidden="true">
+      <svg viewBox="-100 -100 200 200" preserveAspectRatio="xMidYMid meet">
+        <g class="reticle" fill="none" stroke-linecap="square">
+          <path d="M-7 7 0 0 7 7"/><path d="M0 0V-34" class="thin"/>
+          <path d="M-4 15 0 11 4 15M-4 23 0 19 4 23M-4 31 0 27 4 31" class="thin"/>
+          <path d="M-70 0H-12M12 0H70" class="thin"/>
+          <path d="M-60-4V4M-50-2.5V2.5M-40-4V4M-30-2.5V2.5M-20-4V4M20-4V4M30-2.5V2.5M40-4V4M50-2.5V2.5M60-4V4" class="thin"/>
+          <path d="M-72 40H-28M-72 40C-62 33-50 26-28 22" class="thin"/>
+        </g>
+        <g class="reticle-text"><text x="-72" y="50">10</text><text x="-50" y="50">5</text><text x="-32" y="50">2</text></g>
+      </svg>
+    </div>
+    <div id="acidOverlay" hidden aria-hidden="true"></div>
+    <div id="screamOverlay" hidden aria-hidden="true"></div>
+    <div id="pingLayer" aria-hidden="true"></div>
+    <div id="fxLayer"></div><div id="dirLayer"></div>
+
+    <div class="hud-tl">
+      <div class="wave-panel hud-panel">
+        <div class="wave-head"><span class="eyebrow">ВОЛНА</span><span class="enemies-label">ОСТАЛОСЬ <b id="enemies">0</b></span></div>
+        <div class="wave-main"><b id="wave">01</b><span id="waveState">УДЕРЖИВАЙ ПОЗИЦИЮ</span></div>
+        <div class="wave-progress"><i id="waveProgress"></i></div>
+        <p id="objective">Продержись до рассвета</p>
+      </div>
+      <div id="squadPanel" class="squad-panel hud-panel" hidden><div class="eyebrow">ОТРЯД <span id="squadCount">1 / 4</span></div><div id="squadList"></div></div>
+    </div>
+
+    <div class="hud-tc">
+      <div class="compass"><span>СЗ</span><i></i><span id="heading">000</span><i></i><span>СВ</span><b>▼</b></div>
+      <div id="bossBar" hidden>
+        <div class="boss-head"><span class="boss-tag">БОСС</span><span id="bossName">ТИТАН</span><span id="bossPhase" aria-label="Фазы босса"><i class="active"></i><i></i><i></i></span></div>
+        <div class="boss-track"><i id="bossFill"></i></div>
+      </div>
+      <div id="eventTag" hidden></div>
+    </div>
+
+    <div class="hud-tr">
+      <div class="score-panel hud-panel"><span>УСТРАНЕНО</span><b id="kills">0</b><small id="score">000000 ОЧКОВ</small></div>
+      <div class="hud-tools">
+        <div class="grenade-panel hud-panel" aria-label="Запас ручных гранат"><kbd>G</kbd><span>ГРАНАТЫ</span><b id="grenadeCount">3</b></div>
+        <button id="djAbility" type="button" aria-label="Включить утку-диджея" title="Отвлекает зомби в радиусе 12 метров"><kbd>Q</kbd><span><b>УТКА-ДИДЖЕЙ</b><small id="djStatus">Включить</small></span></button>
+      </div>
+      <div id="killFeed"></div>
+    </div>
+
+    <div id="crosshair"><i></i><i></i><i></i><i></i><b></b></div>
+    <div id="hitmarker" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+    <div id="lowAmmo" hidden><b>МАЛО ПАТРОНОВ</b><kbd>R</kbd></div>
+    <div id="combo" hidden></div>
+
+    <div id="introCard" hidden><span id="introAct">АКТ I · ПЕРВАЯ НОЧЬ</span><b id="introTitle">НОЧЬ 01</b><i class="intro-rule"></i></div>
     <div id="banner"><span id="bannerLabel"></span><b id="bannerTitle"></b><p id="bannerSub"></p></div>
-    <div id="toast" role="status"></div>
-    <div class="health-panel"><div class="health-number"><span>✚</span><b id="health">100</b><small id="healthMax">/ 100</small></div><div class="health-bar"><i id="healthBar"></i></div><div class="stamina-bar"><i id="staminaBar"></i></div><small>ЗДОРОВЬЕ <span>SHIFT · БЕГ</span></small></div>
-    <div class="quickslots"><div id="slotAk" class="active"><span>1</span> АК-47</div><div id="slotShotgun"><span>2</span> ДРОБОВИК</div><div id="slotRpg"><span>3</span> РПГ-7</div><div id="slotMini" hidden><span>4</span> МИНИГАН</div><small>R · ПЕРЕЗАРЯДКА · L · ФОНАРИК <span>ESC · ПАУЗА</span></small></div>
-    <div class="ammo-panel"><span id="weaponName">АК-47</span><div><b id="ammo">30</b><span>/ <i id="reserve">180</i></span></div><small id="ammoStatus">7.62 × 39 ММ · АВТО</small><div id="ammoPips"></div><div id="reloadBar"><i></i></div></div>
+    <div id="perkModal" hidden><div class="perk-head"><b>ВЫБЕРИ УСИЛЕНИЕ</b><span>КЛАВИШИ 1 · 2 · 3</span></div><div class="perk-cards"></div></div>
+
+    <div class="hud-bl">
+      <div class="health-panel hud-panel">
+        <div class="health-number"><span aria-hidden="true">✚</span><b id="health">100</b><small id="healthMax">/ 100</small></div>
+        <div class="health-bar"><i id="healthBar"></i></div>
+        <div class="stamina-bar"><i id="staminaBar"></i></div>
+        <small class="panel-foot">ЗДОРОВЬЕ <span>SHIFT · БЕГ</span></small>
+      </div>
+    </div>
+
+    <div class="hud-bc">
+      <div id="toast" role="status"></div>
+      <div id="radioBox" hidden data-who="mayak">
+        <div class="radio-head"><span class="radio-wave" aria-hidden="true"><i></i><i></i><i></i><i></i></span><b id="radioWho">МАЯК</b><span class="radio-freq" aria-hidden="true"></span></div>
+        <p id="radioText"></p>
+      </div>
+      <div class="quickslots" aria-label="Оружие">
+        <div id="slotAk" class="slot active"><span class="slot-key">1</span><svg class="slot-icon" viewBox="0 0 200 65" aria-hidden="true"><path d="M9 26 42 21 48 27 109 27 109 22 137 22 141 27 182 27 182 22 187 22 187 30 139 32 114 34 103 39 96 60 81 57 89 39 76 37 69 51 61 49 65 35 44 33 12 43Z"/></svg><b>АК-47</b><i class="slot-lock" aria-hidden="true"><svg viewBox="0 0 16 18"><path d="M4 8V5a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="2"/><rect x="2" y="8" width="12" height="9" rx="1"/></svg></i></div>
+        <div id="slotShotgun" class="slot"><span class="slot-key">2</span><svg class="slot-icon" viewBox="0 0 200 65" aria-hidden="true"><path d="M8 30 40 24 58 26 184 26 192 28 192 32 124 33 122 38 84 38 82 34 64 34 57 46 46 44 51 34 40 36 10 42Z"/><path d="M124 34h42v7h-42z"/></svg><b>ДРОБОВИК</b><i class="slot-lock" aria-hidden="true"><svg viewBox="0 0 16 18"><path d="M4 8V5a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="2"/><rect x="2" y="8" width="12" height="9" rx="1"/></svg></i></div>
+        <div id="slotSmg" class="slot locked" data-unlock="ВОЛНА 7"><span class="slot-key">3</span><svg class="slot-icon" viewBox="0 0 200 65" aria-hidden="true"><path d="M22 24 62 24 66 19 150 19 150 23 174 23 174 29 150 30 106 31 100 36 93 52 80 50 85 35 67 33 60 31 22 33Z"/><path d="M102 31h48a5 5 0 0 1 0 11h-48z"/><path d="M22 23 8 25v10l14-2" fill="none" stroke="currentColor" stroke-width="4"/></svg><b>«БИЗОН»</b><i class="slot-lock" aria-hidden="true"><svg viewBox="0 0 16 18"><path d="M4 8V5a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="2"/><rect x="2" y="8" width="12" height="9" rx="1"/></svg></i></div>
+        <div id="slotSvd" class="slot locked" data-unlock="ВОЛНА 12"><span class="slot-key">4</span><svg class="slot-icon" viewBox="0 0 200 65" aria-hidden="true"><path d="M6 30 30 26 36 29 50 29 54 32 122 31 196 30 196 33 122 35 98 36 93 47 85 46 88 36 62 37 53 43 45 37 30 41 8 41Z"/><path d="M70 17h46v8H70zM78 25h5v5h-5zM103 25h5v5h-5z"/><path d="M88 36h6l7 13h-7z"/></svg><b>СВД</b><i class="slot-lock" aria-hidden="true"><svg viewBox="0 0 16 18"><path d="M4 8V5a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="2"/><rect x="2" y="8" width="12" height="9" rx="1"/></svg></i></div>
+        <div id="slotRpg" class="slot"><span class="slot-key">5</span><svg class="slot-icon" viewBox="0 0 200 65" aria-hidden="true"><path d="m10 25 20-3 100 2 23-10 30 13 12 5-13 6-30 10-23-11-98 1-21-4z"/><path d="m76 35-4 22h10l7-22m32 0-3 15h9l6-15"/></svg><b>РПГ-7</b><i class="slot-lock" aria-hidden="true"><svg viewBox="0 0 16 18"><path d="M4 8V5a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="2"/><rect x="2" y="8" width="12" height="9" rx="1"/></svg></i></div>
+        <div id="slotMini" class="slot locked" data-unlock="АИРДРОП"><span class="slot-key">6</span><svg class="slot-icon" viewBox="0 0 200 65" aria-hidden="true"><path d="M30 20h62v26H30z"/><path d="M92 24h94v4H92zM92 31h94v4H92zM92 38h94v4H92zM150 20h7v26h-7z"/><path d="m50 46-7 15h11l7-15z"/><path d="M40 20l8-10h22l4 10" fill="none" stroke="currentColor" stroke-width="4"/></svg><b>МИНИГАН</b><i class="slot-lock" aria-hidden="true"><svg viewBox="0 0 16 18"><path d="M4 8V5a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="2"/><rect x="2" y="8" width="12" height="9" rx="1"/></svg></i></div>
+      </div>
+      <small class="slot-hints">1–6 · КОЛЕСО — ОРУЖИЕ <span>R · ПЕРЕЗАРЯДКА</span><span>Z · МЕТКА</span><span>L · ФОНАРИК</span><span>ESC · ПАУЗА</span></small>
+    </div>
+
+    <div class="hud-br">
+      <div class="ammo-panel hud-panel"><span id="weaponName">АК-47</span><div class="ammo-count"><b id="ammo">30</b><span>/ <i id="reserve">180</i></span></div><small id="ammoStatus">7.62 × 39 ММ · АВТО</small><div id="ammoPips"></div><div id="reloadBar"><i></i></div></div>
+    </div>
+
+    <div id="downed" hidden>
+      <div class="downed-card">
+        <span class="downed-eyebrow">КРОВОТЕЧЕНИЕ</span>
+        <div class="downed-row"><b class="downed-title">ТЫ РАНЕН</b><div class="downed-timer"><span id="downedTimer">30</span><small>СЕК</small></div></div>
+        <div class="downed-bar"><i></i></div>
+        <p>Жди напарника: ему нужно удерживать <kbd>F</kbd> рядом три секунды.</p>
+      </div>
+    </div>
+    <div id="reviveRing" hidden>
+      <div class="revive-dial"><svg viewBox="0 0 100 100" aria-hidden="true"><circle class="revive-track" cx="50" cy="50" r="42"/><circle id="reviveFill" cx="50" cy="50" r="42" pathLength="100"/></svg><kbd>F</kbd></div>
+      <span id="reviveLabel">ПОДНИМАЕШЬ НАПАРНИКА</span>
+    </div>
+
     <div id="lockHint" hidden>Нажми на игру, чтобы управлять мышью</div>
-    <div id="touchControls"><div id="joystick"><i></i></div><div class="touch-buttons"><button id="touchReload">R</button><button id="touchSwitch">⇄</button><button id="touchFire">ОГОНЬ</button><button id="touchGrenade" aria-label="Бросить ручную гранату">ГРАНАТА</button></div></div>
+    <div id="touchControls"><div id="joystick"><i></i></div><div class="touch-buttons"><button id="touchReload" type="button" aria-label="Перезарядка">R</button><button id="touchSwitch" type="button" aria-label="Сменить оружие">⇄</button><button id="touchFire" type="button">ОГОНЬ</button><button id="touchGrenade" type="button" aria-label="Бросить ручную гранату">ГРАНАТА</button></div></div>
   </section>
+
+  <!-- ===================== CO-OP LOBBY ===================== -->
   <section id="coopModal" class="overlay" hidden>
-  <div class="dialog coop-dialog" role="dialog" aria-modal="true" aria-labelledby="coopTitle">
-    <div class="eyebrow">ПРОТОКОЛ СОВМЕСТНОГО ВЫЖИВАНИЯ</div>
-    <h2 id="coopTitle">ДЕРЖИМСЯ ВМЕСТЕ<span>.</span></h2>
-    <p>До четырёх выживших. Одна орда. Пригласи друзей по ссылке и держите периметр вместе.</p>
-    <div id="coopSetup">
-      <label class="coop-label" for="coopName">ТВОЙ ПОЗЫВНОЙ</label>
-      <input id="coopName" class="coop-input" maxlength="24" value="Выживший" autocomplete="nickname" placeholder="Позывной">
-      <button id="coopCreate" class="primary">СОЗДАТЬ КОМНАТУ <span>+</span></button>
-      <div class="coop-divider"><span>ИЛИ ПРИСОЕДИНИТЬСЯ</span></div>
-      <label class="coop-label" for="coopCode">ССЫЛКА ИЛИ КОД КОМНАТЫ</label>
-      <div class="coop-join-row"><input id="coopCode" class="coop-input" autocomplete="off" spellcheck="false" placeholder="Вставь приглашение друга"><button id="coopJoin" class="secondary">ВОЙТИ →</button></div>
+    <div class="dialog coop-dialog" role="dialog" aria-modal="true" aria-labelledby="coopTitle">
+      <div class="eyebrow">ПРОТОКОЛ СОВМЕСТНОГО ВЫЖИВАНИЯ</div>
+      <h2 id="coopTitle">ДЕРЖИМСЯ ВМЕСТЕ<span>.</span></h2>
+      <p class="dialog-lead">До четырёх выживших против одной орды. Создай комнату, отправь ссылку другу — и держите блокпост вместе до рассвета.</p>
+      <div id="coopSetup">
+        <label class="field-label" for="coopName">ТВОЙ ПОЗЫВНОЙ</label>
+        <input id="coopName" class="coop-input" maxlength="24" value="Выживший" autocomplete="nickname" placeholder="Позывной">
+        <button id="coopCreate" type="button" class="primary">СОЗДАТЬ КОМНАТУ <span>+</span></button>
+        <div class="coop-divider"><span>ИЛИ ПРИСОЕДИНИТЬСЯ</span></div>
+        <label class="field-label" for="coopCode">ССЫЛКА ИЛИ КОД КОМНАТЫ</label>
+        <div class="coop-join-row"><input id="coopCode" class="coop-input" autocomplete="off" spellcheck="false" placeholder="Вставь приглашение друга"><button id="coopJoin" type="button" class="secondary">ВОЙТИ →</button></div>
+      </div>
+      <div id="coopLobby" hidden>
+        <div class="coop-room-label"><span>КОМНАТА</span><b id="coopRoomCode"></b></div>
+        <div class="coop-invite-row"><input id="coopInvite" class="coop-input" readonly aria-label="Ссылка для приглашения"><button id="coopCopy" type="button" class="secondary">КОПИРОВАТЬ</button></div>
+        <div class="field-label roster-label"><span>ОТРЯД</span><span>ДО 4 БОЙЦОВ</span></div>
+        <ol id="coopRoster" class="coop-roster" aria-label="Игроки в комнате"></ol>
+        <div class="coop-diff"><div class="field-label"><span>СЛОЖНОСТЬ</span><span class="coop-diff-note">МЕНЯЕТ ВЕДУЩИЙ</span></div>
+          <div id="coopDifficulty" class="difficulty compact" role="radiogroup" aria-label="Сложность">
+            <button type="button" data-difficulty="recruit" role="radio" aria-checked="false"><span class="pips" data-n="1" aria-hidden="true"><i></i><i></i><i></i></span><b>НОВОБРАНЕЦ</b></button>
+            <button type="button" data-difficulty="veteran" role="radio" aria-checked="true" class="active"><span class="pips" data-n="2" aria-hidden="true"><i></i><i></i><i></i></span><b>ВЕТЕРАН</b></button>
+            <button type="button" data-difficulty="nightmare" role="radio" aria-checked="false"><span class="pips" data-n="3" aria-hidden="true"><i></i><i></i><i></i></span><b>КОШМАР</b></button>
+          </div>
+        </div>
+        <div class="coop-start"><div class="field-label"><span>СТАРТ</span><span class="coop-diff-note">ВЫБИРАЕТ ВЕДУЩИЙ</span></div>
+          <select id="coopStartWave" class="startwave-select" aria-label="Стартовая ночь"></select>
+          <p id="coopStartInfo" class="startwave-info"></p>
+        </div>
+        <button id="coopBegin" type="button" class="primary">НАЧАТЬ БОЙ <span>↗</span></button>
+        <p id="coopWait" class="coop-wait" hidden>Ведущий начнёт бой, когда отряд соберётся.</p>
+        <p class="coop-host-note">Ведущий держит вкладку открытой. Если он выйдет, комната закроется.</p>
+      </div>
+      <p id="coopStatus" class="coop-status" role="status" aria-live="polite"></p>
+      <button id="coopClose" type="button" class="text-button">В ГЛАВНОЕ МЕНЮ</button>
+      <button id="coopLeave" type="button" class="text-button" hidden>ПОКИНУТЬ КОМНАТУ</button>
     </div>
-    <div id="coopLobby" hidden>
-      <div class="coop-room-label">КОМНАТА <b id="coopRoomCode"></b></div>
-      <div class="coop-invite-row"><input id="coopInvite" class="coop-input" readonly aria-label="Ссылка для приглашения"><button id="coopCopy" class="secondary">КОПИРОВАТЬ</button></div>
-      <ol id="coopRoster" class="coop-roster" aria-label="Игроки в комнате"></ol>
-      <button id="coopBegin" class="primary">НАЧАТЬ БОЙ <span>↗</span></button>
-      <p id="coopWait" class="coop-wait" hidden>Ведущий начнёт бой, когда отряд соберётся.</p>
-      <p class="coop-host-note">Ведущий держит вкладку открытой. Если он выйдет, комната закроется.</p>
+  </section>
+
+  <!-- ===================== PAUSE ===================== -->
+  <section id="pause" class="overlay" hidden>
+    <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="pauseTitle">
+      <div class="eyebrow">ПЕРЕДЫШКА</div>
+      <h2 id="pauseTitle">НА ПАУЗЕ<span>.</span></h2>
+      <p class="dialog-lead">В одиночной игре время остановлено. В кооперативе бой продолжается — не задерживайся.</p>
+      <button id="resume" type="button" class="primary">ПРОДОЛЖИТЬ <span>→</span></button>
+      <div class="button-row"><button id="pauseSettings" type="button" class="secondary">НАСТРОЙКИ</button><button id="pauseHowto" type="button" class="secondary">КАК ИГРАТЬ</button></div>
+      <button id="restartPause" type="button" class="secondary">НАЧАТЬ ЗАНОВО</button>
+      <button id="quit" type="button" class="text-button">В ГЛАВНОЕ МЕНЮ</button>
     </div>
-    <p id="coopStatus" class="coop-status" role="status" aria-live="polite"></p>
-    <button id="coopClose" class="text-button">В ГЛАВНОЕ МЕНЮ</button>
-    <button id="coopLeave" class="text-button" hidden>ПОКИНУТЬ КОМНАТУ</button>
-  </div>
-</section><section id="pause" class="overlay" hidden><div class="dialog"><div class="eyebrow">ПЕРЕДЫШКА</div><h2>НА ПАУЗЕ<span>.</span></h2><p>В одиночной игре время остановлено. В кооперативе бой продолжается.</p><button id="resume" class="primary">ПРОДОЛЖИТЬ <span>→</span></button><button id="restartPause" class="secondary">НАЧАТЬ ЗАНОВО</button><button id="quit" class="text-button">В ГЛАВНОЕ МЕНЮ</button><div class="controls-grid"><span>WASD</span><small>Движение</small><span>Мышь</span><small>Обзор · ЛКМ огонь · ПКМ прицел</small><span>Shift / Пробел</span><small>Бег / прыжок</small><span>1–4 · R</span><small>АК · дробовик · РПГ · перезарядка</small><span>4 · F</span><small>Миниган · удерживать для помощи раненому</small><span>G</span><small>Бросить ручную гранату</small><span>Q</span><small>Утка-диджей · отвлечь орду на 6 секунд</small><span>↑ ↓ ← →</span><small>Дополнительный поворот камеры</small></div></div></section>
-  <section id="gameover" class="overlay" hidden><div class="dialog"><div class="eyebrow">СИГНАЛ ПОТЕРЯН</div><h2>РУБЕЖ ПАЛ<span>.</span></h2><p id="deathMessage">Ты держался до последнего.</p><div class="results"><div><b id="finalWave">01</b><small>ВОЛНА</small></div><div><b id="finalKills">0</b><small>УСТРАНЕНО</small></div><div><b id="finalScore">0</b><small>ОЧКОВ</small></div></div><button id="restart" class="primary">ЕЩЁ ОДНА ПОПЫТКА <span>↗</span></button><button id="menuReturn" class="text-button">В ГЛАВНОЕ МЕНЮ</button></div></section>
-  <section id="settingsModal" class="overlay" hidden><div class="dialog"><div class="eyebrow">ПАРАМЕТРЫ ОПЕРАТОРА</div><h2>НАСТРОЙКИ<span>.</span></h2><label class="setting-row">Звук <input id="sound" type="checkbox" checked></label><label class="setting-row" for="sensitivity">Чувствительность мыши <output id="sensitivityValue">1.0</output></label><input id="sensitivity" type="range" min="0.3" max="2.2" step="0.1" value="1"><p class="settings-note">Для полного обзора разреши захват курсора. Если он недоступен, удерживай левую кнопку для обзора или используй стрелки.</p><button id="closeSettings" class="primary">ГОТОВО <span>✓</span></button></div></section>
-  <div id="loading"><span class="brandmark">Ⅲ</span><span id="loadingText">УСТАНАВЛИВАЕМ СВЯЗЬ С ПЕРИМЕТРОМ…</span></div>
+  </section>
+
+  <!-- ===================== GAME OVER ===================== -->
+  <section id="gameover" class="overlay overlay-defeat" hidden>
+    <div class="dialog dialog-wide" role="dialog" aria-modal="true" aria-labelledby="gameoverTitle">
+      <div class="eyebrow eyebrow-danger"><span class="status-light"></span>СИГНАЛ ПОТЕРЯН</div>
+      <h2 id="gameoverTitle">РУБЕЖ ПАЛ<span>.</span></h2>
+      <p id="deathMessage" class="dialog-lead">Ты держался до последнего.</p>
+      <div class="results"><div><b id="finalWave">01</b><small>ВОЛНА</small></div><div><b id="finalKills">0</b><small>УСТРАНЕНО</small></div><div><b id="finalScore">0</b><small>ОЧКОВ</small></div></div>
+      <div class="table-wrap"><table class="stats"><thead><tr><th>БОЕЦ</th><th>УБИЙСТВА</th><th>В ГОЛОВУ</th><th>ТОЧНОСТЬ</th><th>УРОН</th><th>ПОДЪЁМЫ</th></tr></thead><tbody id="statsTable"></tbody></table></div>
+      <div class="button-row button-row-main"><button id="restart" type="button" class="primary">ЕЩЁ ОДНА ПОПЫТКА <span>↗</span></button><button id="retryWave" type="button" class="secondary">С НОЧИ 01</button><button id="menuReturn" type="button" class="secondary">В ГЛАВНОЕ МЕНЮ</button></div>
+    </div>
+  </section>
+
+  <!-- ===================== VICTORY ===================== -->
+  <section id="victory" class="overlay overlay-victory" hidden>
+    <div class="sunrise" aria-hidden="true"><i class="sun"></i><i class="horizon"></i></div>
+    <div class="dialog dialog-wide victory-dialog" role="dialog" aria-modal="true" aria-labelledby="victoryTitle">
+      <div class="eyebrow"><span class="status-light"></span>ЭВАКУАЦИЯ ПОДТВЕРЖДЕНА · СЕКТОР 07</div>
+      <h2 id="victoryTitle">РАССВЕТ<span>.</span></h2>
+      <p class="victory-sub">30 ночей позади. Вертолёт уходит на восток.</p>
+      <div id="victoryText" class="victory-text"></div>
+      <div class="table-wrap"><table class="stats"><thead><tr><th>БОЕЦ</th><th>УБИЙСТВА</th><th>В ГОЛОВУ</th><th>ТОЧНОСТЬ</th><th>УРОН</th><th>ПОДЪЁМЫ</th></tr></thead><tbody id="victoryStats"></tbody></table></div>
+      <div class="button-row button-row-main"><button id="victoryEndless" type="button" class="primary">БЕСКОНЕЧНЫЙ РЕЖИМ <span>∞</span></button><button id="victoryMenu" type="button" class="secondary">В МЕНЮ</button></div>
+    </div>
+  </section>
+
+  <!-- ===================== SETTINGS ===================== -->
+  <section id="settingsModal" class="overlay overlay-top" hidden>
+    <div class="dialog dialog-wide settings-dialog" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+      <div class="eyebrow">ПАРАМЕТРЫ ОПЕРАТОРА</div>
+      <h2 id="settingsTitle">НАСТРОЙКИ<span>.</span></h2>
+      <div class="settings-grid">
+        <fieldset class="settings-group">
+          <legend>ЗВУК</legend>
+          <label class="toggle-row"><span>Звук</span><input id="sound" class="switch" type="checkbox" checked></label>
+          <div class="range-row"><label for="volMaster">Общая громкость</label><output id="volMasterValue" for="volMaster">80</output><input id="volMaster" type="range" min="0" max="100" step="1" value="80"></div>
+          <div class="range-row"><label for="volSfx">Эффекты</label><output id="volSfxValue" for="volSfx">90</output><input id="volSfx" type="range" min="0" max="100" step="1" value="90"></div>
+          <div class="range-row"><label for="volMusic">Музыка</label><output id="volMusicValue" for="volMusic">60</output><input id="volMusic" type="range" min="0" max="100" step="1" value="60"></div>
+        </fieldset>
+        <fieldset class="settings-group">
+          <legend>УПРАВЛЕНИЕ</legend>
+          <div class="range-row"><label for="sensitivity">Чувствительность мыши</label><output id="sensitivityValue" for="sensitivity">1.0</output><input id="sensitivity" type="range" min="0.3" max="2.2" step="0.1" value="1"></div>
+          <div class="range-row"><label for="fov">Поле зрения</label><output id="fovValue" for="fov">78°</output><input id="fov" type="range" min="70" max="100" step="1" value="78"></div>
+          <p class="settings-note">Для полного обзора разреши захват курсора. Если он недоступен, удерживай левую кнопку мыши или используй стрелки.</p>
+        </fieldset>
+        <fieldset class="settings-group">
+          <legend>ГРАФИКА</legend>
+          <div class="select-row"><label for="quality">Качество</label><select id="quality"><option value="low">Низкое — слабые ноутбуки</option><option value="medium">Среднее</option><option value="high" selected>Высокое</option></select></div>
+          <label class="toggle-row"><span>Тени от фонарика</span><input id="shadowsToggle" class="switch" type="checkbox" checked></label>
+          <label class="toggle-row"><span>Цифры урона</span><input id="damageNumbersToggle" class="switch" type="checkbox" checked></label>
+        </fieldset>
+      </div>
+      <button id="closeSettings" type="button" class="primary">ГОТОВО <span>✓</span></button>
+    </div>
+  </section>
+
+  <!-- ===================== HOW TO PLAY ===================== -->
+  <section id="howtoModal" class="overlay overlay-top" hidden>
+    <div class="dialog dialog-xl howto-dialog" role="dialog" aria-modal="true" aria-labelledby="howtoTitle">
+      <div class="howto-top">
+        <div><div class="eyebrow">ПОЛЕВОЙ УСТАВ · СЕКТОР 07</div><h2 id="howtoTitle">КАК ИГРАТЬ<span>.</span></h2></div>
+        <button id="closeHowto" type="button" class="close-x" aria-label="Закрыть">✕</button>
+      </div>
+      <div class="tabs">
+        <input type="radio" name="howtoTab" id="howtoTabControls" checked><label for="howtoTabControls">Управление</label>
+        <input type="radio" name="howtoTab" id="howtoTabSurvival"><label for="howtoTabSurvival">Выживание</label>
+        <input type="radio" name="howtoTab" id="howtoTabBestiary"><label for="howtoTabBestiary">Бестиарий</label>
+        <input type="radio" name="howtoTab" id="howtoTabArsenal"><label for="howtoTabArsenal">Арсенал</label>
+        <div class="tab-panels">
+          <div class="tab-panel panel-controls">
+            <div class="controls-cols">
+              <div class="controls"><h3 class="controls-title">ДВИЖЕНИЕ</h3><dl>
+                <div><dt><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></dt><dd>Движение</dd></div>
+                <div><dt><kbd>Shift</kbd></dt><dd>Бег (тратит выносливость)</dd></div>
+                <div><dt><kbd>Пробел</kbd></dt><dd>Прыжок</dd></div>
+                <div><dt><kbd>Мышь</kbd></dt><dd>Обзор; стрелки — дополнительный поворот</dd></div>
+              </dl></div>
+              <div class="controls"><h3 class="controls-title">БОЙ</h3><dl>
+                <div><dt><kbd>ЛКМ</kbd></dt><dd>Огонь</dd></div>
+                <div><dt><kbd>ПКМ</kbd></dt><dd>Прицел; у СВД — оптика</dd></div>
+                <div><dt><kbd>R</kbd></dt><dd>Перезарядка</dd></div>
+                <div><dt><kbd>1</kbd>–<kbd>6</kbd></dt><dd>Оружие; колесо мыши — по кругу</dd></div>
+                <div><dt><kbd>G</kbd></dt><dd>Ручная граната</dd></div>
+              </dl></div>
+              <div class="controls"><h3 class="controls-title">ОТРЯД</h3><dl>
+                <div><dt><kbd>Q</kbd></dt><dd>Утка-диджей: орда танцует 6 секунд</dd></div>
+                <div><dt><kbd>Z</kbd></dt><dd>Метка: враг или «сюда» для всех</dd></div>
+                <div><dt><kbd>F</kbd></dt><dd>Удерживать рядом с раненым — поднять</dd></div>
+                <div><dt><kbd>L</kbd></dt><dd>Фонарик</dd></div>
+                <div><dt><kbd>Esc</kbd></dt><dd>Пауза</dd></div>
+              </dl></div>
+            </div>
+            <p class="howto-note">На планшете: левый джойстик — движение, свайп справа — обзор, кнопки справа — огонь, перезарядка, смена оружия и граната.</p>
+          </div>
+
+          <div class="tab-panel panel-survival">
+            <div class="tips">
+              <article><b>30 НОЧЕЙ</b><p>Кампания — шесть актов по пять волн. Каждая пятая волна — босс. Время идёт от глубокой ночи к рассвету.</p></article>
+              <article><b>ЭВАКУАЦИЯ</b><p>На тридцатой волне приходит Отец Орды. Убейте его — и вертолёт заберёт отряд.</p></article>
+              <article><b>РАНЕНИЕ</b><p>При нуле здоровья боец падает и истекает кровью 30 секунд. Напарник поднимает его, удерживая F три секунды.</p></article>
+              <article><b>ВОЗВРАЩЕНИЕ</b><p>Не успели поднять — боец выбывает до конца волны и возвращается с 50 здоровья. Бой проигран, только когда лежат все.</p></article>
+              <article><b>МЕТКИ</b><p>Z ставит метку там, куда ты смотришь. Видна всем шесть секунд — используй, чтобы показать крикуна или плевуна.</p></article>
+              <article><b>УСИЛЕНИЯ</b><p>Между волнами выбирай одно из трёх усилений клавишами 1 · 2 · 3. Они складываются до максимального уровня.</p></article>
+              <article><b>АИРДРОП</b><p>Иногда в центр блокпоста падает ящик с миниганом — шквал огня до конца волны. Бегите к нему вместе, прикрывая друг друга.</p></article>
+              <article><b>КРЯК FM</b><p>Пиратская утка-диджей сбивает орду с толку. Одна на весь отряд — договоритесь, кто включает.</p></article>
+            </div>
+          </div>
+
+          <div class="tab-panel panel-bestiary">
+            <div class="beast-grid">
+              <article class="beast"><span class="beast-no">01</span><header><b>ХОДОК</b><span class="threat" data-t="1"><i></i><i></i><i></i><i></i><i></i></span></header><small>С ПЕРВОЙ ВОЛНЫ</small><p>Основа орды. Медленный, но никогда не останавливается. Пара выстрелов в голову решает дело.</p></article>
+              <article class="beast"><span class="beast-no">02</span><header><b>БЕГУН</b><span class="threat" data-t="2"><i></i><i></i><i></i><i></i><i></i></span></header><small>С ВОЛНЫ 2</small><p>Худой и быстрый, ломится напрямую. Не дай подойти вплотную — бей короткими очередями.</p></article>
+              <article class="beast"><span class="beast-no">03</span><header><b>БОМБЕР</b><span class="threat" data-t="3"><i></i><i></i><i></i><i></i><i></i></span></header><small>С ВОЛНЫ 3</small><p>Раздутый и нестабильный. Взрывается рядом с тобой — стреляй издалека, взрыв заденет и соседей.</p></article>
+              <article class="beast"><span class="beast-no">04</span><header><b>ГРОМИЛА</b><span class="threat" data-t="3"><i></i><i></i><i></i><i></i><i></i></span></header><small>С ВОЛНЫ 4</small><p>Гора мяса: держит много урона и сильно бьёт. Дробовик в упор или ракета РПГ.</p></article>
+              <article class="beast"><span class="beast-no">05</span><header><b>ПЛЕВУН</b><span class="threat" data-t="3"><i></i><i></i><i></i><i></i><i></i></span></header><small>С ВОЛНЫ 6</small><p>Держится на 9–16 метрах и плюёт кислотой по дуге. Лужа жжёт четыре секунды — не стой в ней.</p></article>
+              <article class="beast"><span class="beast-no">06</span><header><b>ПОЛЗУН</b><span class="threat" data-t="2"><i></i><i></i><i></i><i></i><i></i></span></header><small>С ВОЛНЫ 7</small><p>Безногий торс, ползёт стаями по 3–5. Низкий силуэт теряется в толпе — опусти прицел.</p></article>
+              <article class="beast"><span class="beast-no">07</span><header><b>КРИКУН</b><span class="threat" data-t="4"><i></i><i></i><i></i><i></i><i></i></span></header><small>С ВОЛНЫ 11 · ПРИОРИТЕТ</small><p>Визг ускоряет всех зомби вокруг на треть. Перед криком раскрывает пасть — убей его первым.</p></article>
+              <article class="beast"><span class="beast-no">08</span><header><b>ШТУРМОВИК</b><span class="threat" data-t="4"><i></i><i></i><i></i><i></i><i></i></span></header><small>С ВОЛНЫ 16</small><p>Щит и бронежилет: спереди почти не пробить. Цель в голову или заходи с фланга.</p></article>
+            </div>
+            <div class="section-label boss-label">БОССЫ</div>
+            <div class="beast-grid bosses">
+              <article class="beast boss"><span class="beast-no">Ⅰ</span><header><b>ТИТАН</b><span class="threat" data-t="5"><i></i><i></i><i></i><i></i><i></i></span></header><small>ВОЛНЫ 5 И 20</small><p>Бьёт по земле, бросает валуны и зовёт подмогу. Уйди от тарана — врезавшись в стену, он оглохнет.</p></article>
+              <article class="beast boss"><span class="beast-no">Ⅱ</span><header><b>МАТКА</b><span class="threat" data-t="5"><i></i><i></i><i></i><i></i><i></i></span></header><small>ВОЛНЫ 10 И 25</small><p>Рожает ползунов и плюёт веером кислоты. Светящиеся мешки — слабые места. Ранена — звереет.</p></article>
+              <article class="beast boss"><span class="beast-no">Ⅲ</span><header><b>МЯСНИК</b><span class="threat" data-t="5"><i></i><i></i><i></i><i></i><i></i></span></header><small>ВОЛНЫ 15 И 25</small><p>Цепным крюком подтягивает к себе, вблизи рубит тесаком дважды. Держите его между двух огней.</p></article>
+              <article class="beast boss final"><span class="beast-no">Ⅳ</span><header><b>ОТЕЦ ОРДЫ</b><span class="threat" data-t="5"><i></i><i></i><i></i><i></i><i></i></span></header><small>ВОЛНА 30 · ФИНАЛ</small><p>Три фазы: таран и валуны, затем кислота и выводок, в конце — крик, разгоняющий орду. Его смерть — ваш билет домой.</p></article>
+            </div>
+          </div>
+
+          <div class="tab-panel panel-arsenal">
+            <div class="arsenal">
+              <article class="gun"><span class="slot-key">1</span><svg viewBox="0 0 200 65" aria-hidden="true"><path d="M9 26 42 21 48 27 109 27 109 22 137 22 141 27 182 27 182 22 187 22 187 30 139 32 114 34 103 39 96 60 81 57 89 39 76 37 69 51 61 49 65 35 44 33 12 43Z"/></svg><div><b>АК-47</b><small>Штурмовая винтовка · с начала</small></div><p>Надёжная основа. Короткие очереди держат разброс в узде.</p></article>
+              <article class="gun"><span class="slot-key">2</span><svg viewBox="0 0 200 65" aria-hidden="true"><path d="M8 30 40 24 58 26 184 26 192 28 192 32 124 33 122 38 84 38 82 34 64 34 57 46 46 44 51 34 40 36 10 42Z"/><path d="M124 34h42v7h-42z"/></svg><div><b>ДРОБОВИК</b><small>Помповый · с начала</small></div><p>Девять дробин. В упор разрывает даже громилу.</p></article>
+              <article class="gun"><span class="slot-key">3</span><svg viewBox="0 0 200 65" aria-hidden="true"><path d="M22 24 62 24 66 19 150 19 150 23 174 23 174 29 150 30 106 31 100 36 93 52 80 50 85 35 67 33 60 31 22 33Z"/><path d="M102 31h48a5 5 0 0 1 0 11h-48z"/></svg><div><b>ПП «БИЗОН»</b><small>Пистолет-пулемёт · волна 7</small></div><p>Шнековый магазин на 64 патрона. Режет стаи ползунов.</p></article>
+              <article class="gun"><span class="slot-key">4</span><svg viewBox="0 0 200 65" aria-hidden="true"><path d="M6 30 30 26 36 29 50 29 54 32 122 31 196 30 196 33 122 35 98 36 93 47 85 46 88 36 62 37 53 43 45 37 30 41 8 41Z"/><path d="M70 17h46v8H70zM78 25h5v5h-5zM103 25h5v5h-5z"/><path d="M88 36h6l7 13h-7z"/></svg><div><b>СВД</b><small>Снайперская винтовка · волна 12</small></div><p>Прошивает до трёх целей. Без прицела бьёт неточно — жми ПКМ.</p></article>
+              <article class="gun"><span class="slot-key">5</span><svg viewBox="0 0 200 65" aria-hidden="true"><path d="m10 25 20-3 100 2 23-10 30 13 12 5-13 6-30 10-23-11-98 1-21-4z"/><path d="m76 35-4 22h10l7-22m32 0-3 15h9l6-15"/></svg><div><b>РПГ-7</b><small>Гранатомёт · с начала</small></div><p>Урон по площади. Не стреляй под ноги и по друзьям рядом.</p></article>
+              <article class="gun"><span class="slot-key">6</span><svg viewBox="0 0 200 65" aria-hidden="true"><path d="M30 20h62v26H30z"/><path d="M92 24h94v4H92zM92 31h94v4H92zM92 38h94v4H92zM150 20h7v26h-7z"/><path d="m50 46-7 15h11l7-15z"/></svg><div><b>МИНИГАН</b><small>Только из аирдропа</small></div><p>Шквал огня до конца волны. Подбери ящик в центре блокпоста.</p></article>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div id="loading"><svg class="emblem" viewBox="0 0 40 44" aria-hidden="true"><path d="M20 2 38 9v14c0 10-8 17-18 19C10 40 2 33 2 23V9z" fill="none" stroke="currentColor" stroke-width="2"/><path d="m11 16 9 6 9-6M11 24l9 6 9-6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="bevel"/></svg><div class="loading-body"><b>СЕКТОР 07</b><span id="loadingText">УСТАНАВЛИВАЕМ СВЯЗЬ С ПЕРИМЕТРОМ…</span><i class="loading-bar"></i></div></div>
   <script src="vendor/peerjs.min.js"></script><script type="module" src="game.js"></script>
 </body></html>
